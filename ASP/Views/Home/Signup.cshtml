@@ -1,0 +1,120 @@
+﻿@model ASP.Models.Home.Signup.SingupPageModel
+@{
+	ViewData["Title"] = "Реєстрація";
+	bool isFormInvalid =
+		Model.FormModel?.HasData == true && Model.ValidationErrors?.Count > 0;
+	bool isSignUpSuccess = 
+		Model.FormModel?.HasData == true && Model.ValidationErrors?.Count == 0;
+	Dictionary<string, string> classes = new();
+	foreach (String key in new String[] { "UserName", "UserEmail", "UserBirthdate", "UserAvatar", "Agreement", "Password", "UserRepeat" })
+	{
+		classes[key] = isFormInvalid?
+		(Model.ValidationErrors?.ContainsKey(key) ?? false
+			? "is-invalid"
+			: "is-valid")
+		: "";
+	}
+}
+<div class="text-center">
+	<h1 class="display-4">Реєстрація нового користувача</h1>
+</div>
+
+@if (isFormInvalid)
+{
+	<div class="alert alert-danger" role="alert">
+		Виникли проблеми з перевіркою даних форми
+	</div>
+}
+@if (isSignUpSuccess)
+{
+	<div class="alert alert-success" role="alert">
+		Ви успішно зареєстровані
+	</div>
+}
+
+<form method="post" enctype="multipart/form-data">
+	<div class="row">
+		<div class="col">
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="user-name"><i class="bi bi-person-vcard"></i></span>
+				<input type="text"
+					   class="form-control @classes["UserName"]"
+					   placeholder="Username"
+					   name="user-name"
+					   value="@(isFormInvalid ? Model.FormModel!.UserName : "")"
+					   aria-label="Username" aria-describedby="user-name">
+				<div class="invalid-feedback">Поле с именем не дожен быть пустым</div>
+			</div>
+		</div>
+		<div class="col">
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="user-email"><i class="bi bi-envelope-at"></i></span>
+				<input type="text" class="form-control @classes["UserEmail"]" placeholder="Email"
+					   name="user-email"
+					   value="@(isFormInvalid ? Model.FormModel!.UserEmail : "")"
+					   aria-label="Email" aria-describedby="user-email">
+				<div class="invalid-feedback">Поле с почтой не дожен быть пустым</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="user-password"><i class="bi bi-lock"></i></span>
+				<input type="password" class="form-control @classes["Password"]" placeholder="Пароль"
+					   name="user-password"
+					   value="@(isFormInvalid ? Model.FormModel!.Password : "")"
+					   aria-label="UserPassword" aria-describedby="user-password">
+				<div class="invalid-feedback">Введен неверный пароль</div>
+			</div>
+		</div>
+		<div class="col">
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="user-repeat"><i class="bi bi-unlock"></i></span>
+				<input type="password" class="form-control @classes["UserRepeat"]" placeholder="Повторiть пароль"
+					   name="user-repeat"
+					   aria-label="Repeat" aria-describedby="user-repeat">
+				<div class="invalid-feedback">Пароли не совпадают</div>
+			</div>
+		</div>
+
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<div class="input-group mb-3">
+				<span class="input-group-text" id="user-birthdate"><i class="bi bi-cake2"></i></span>
+				<input type="date" class="form-control @classes["UserBirthdate"]"
+					   name="user-birthdate"
+					   value="@(isFormInvalid ? Model.FormModel!.UserBirthdate.ToString("yyyy-MM-dd") : "")"
+					   aria-label="UserBirthdate" aria-describedby="user-birthdate">
+				<div class="invalid-feedback">Поле не должен быть пустым</div>
+			</div>
+		</div>
+		<div class="col">
+			<div class="input-group mb-3">
+				<label class="input-group-text" for="user-avatar"><i class="bi bi-person-circle"></i></label>
+				<input type="file" class="form-control @classes["UserAvatar"]" name="user-avatar" id="user-avatar"
+					   aria-label="UserAvatar" aria-describedby="user-avatar">
+				<div class="invalid-feedback">Файл должен быть типа изображения</div>
+			</div>
+		</div>
+
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<div class="form-check">
+				<input class="form-check-input" name="user-agreement" type="checkbox" value="true" id="user-agreement">
+				<label class="form-check-label @classes["Agreement"]" for="agreement">Погоджуюсь із правилами сайту</label>
+				<div class="invalid-feedback">Нужно потвердить соглашение с правилами сайта</div>
+			</div>
+		</div>
+		<div class="col">
+			<button type="submit" name="signup-button" value="true" class="btn btn-secondary">Реєстрація</button>
+		</div>
+	</div>
+
+
+</form>
