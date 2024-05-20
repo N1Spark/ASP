@@ -10,10 +10,13 @@ using ASP.Models.Home.Signup;
 using System.Text.RegularExpressions;
 using ASP.Data.DAL;
 using ASP.Services.Kdf;
+using ASP.Services.Email;
+using System.Net.Mail;
+using ASP.Models.Home.Signup.MailTemplates;
 
 namespace ASP.Controllers
 {
-	public class HomeController : Controller
+    public class HomeController : Controller
 	{
 		/* Інжекція сервісів (залежностей) - запит у контейнера
         на передачу посилань на відповідні об'єкти. Найбільш
@@ -28,6 +31,7 @@ namespace ASP.Controllers
 		private readonly DataContext _dataContext;
 		private readonly DataAccessor _dataAccessor;
 		private readonly IKdfService _kdfService;
+		private readonly IEmailService _emailService;
 
 		private readonly ILogger<HomeController> _logger;
 
@@ -35,16 +39,41 @@ namespace ASP.Controllers
 		private readonly IHashService _hashService;
 
 		//додаємо до конструктора параметр-залежність і зберігаємо її у тілі
-		public HomeController(IHashService hashService, ILogger<HomeController> logger, DataContext dataContext, DataAccessor dataAccessor, IKdfService kdfService)
+		public HomeController(IHashService hashService, ILogger<HomeController> logger, DataContext dataContext, DataAccessor dataAccessor, IKdfService kdfService, IEmailService emailService)
 		{
 			_logger = logger;               // Збереження переданих залежностей, що їх
 			_hashService = hashService;     // передає контейнер при створенні контролера
 			_dataContext = dataContext;
 			_dataAccessor = dataAccessor;
 			_kdfService = kdfService;
+			_emailService = emailService;
 		}
 		public IActionResult Index()
 		{
+			return View();
+		}
+		public IActionResult ConfirmEmail(String Id)
+		{
+			/*	Ідея Basic-автентифікації - розділення логіну та паролю
+			 *	через ":" та кодування у Base64
+			 *	user@i.ua:123 --- dXNlckBpLnVh0jEyMw ==
+			 */
+			String email, code;
+			try
+			{
+				String data = System.Text.Encoding.UTF8.GetString(
+				Convert.FromBase64String(Id));          // user@i.ua:123
+				String[] parts = data.Split(':', 2);    // [user@i.ua, 123]
+				email = parts[0];                       // user@i.ua
+				code = parts[1];                        // 123
+				ViewData["result"] = _dataAccessor.UserDao.ConfirmEmail(email, code)
+					? "Пошта успішно підтверджена"
+					: "Помилка підтвердження пошти";
+			}
+			catch
+			{
+				ViewData["result"] = "Дані не розпізнані";
+			}
 			return View();
 		}
 		public IActionResult Intro()
@@ -105,7 +134,7 @@ namespace ASP.Controllers
 					"Драйвер БД: у залежності від СУБД -\r\n\t\tдля MSSQL: " +
 					"Microsoft.EntityFrameworkCore.SqlServer\r\n\t\tMySQL: Pomelo.EntityFrameworkCore.MySql"
 				},
-				DataStruct = new List<String> 
+				DataStruct = new List<String>
 				{
 					"Створюємо в корені проєкту папку Data, у ній - клас DataContext",
 					"Реалізуємо рядок підключення до БД. MSSQL може створювати БД,\r\n\t\tвідповідно можна створити рядок до поки що неіснуючої БД.\r\n\t\tMySQL - краще створити БД, але залишити порожньою. Рядки підключення\r\n\t\tвміщують до appsettings.json у спеціальну секцію \"ConnectionStrings\"",
@@ -172,59 +201,97 @@ namespace ASP.Controllers
 				PageTitle = "Структура URL",
 				PageText = new List<String>
 				{
-                    "Протокол: This is the designation of the protocol that is used to access the resource. \r\n        For example, http://, https://, ftp://, mailto:, etc..",
-                    "Домен: This is the part of the URL that indicates the address of the server on which the resource is hosted. \r\n        For example, www.example.com.",
-                    "Путь: This points to a specific path to a resource on the server. This is the part of the URL after the domain. \r\n        For example, /path/to/resource.",
-                    "Строка запроса: These are the parameters passed in the URL for a request to a resource. \r\n        They begin with a question symbol ? and can contain key-value pairs separated by the ampersand & character. For example, ?key1=value1&key2=value2.",
-                    "Фрагмент: This is a specific part of the resource that you need to go to or scroll to after the page has loaded. \r\n        The fragment begins with a hash symbol #. For example, #section1."
-                },
-                PageImageSrc = "/img/url.jpg"
-            };
+					"Протокол: This is the designation of the protocol that is used to access the resource. \r\n        For example, http://, https://, ftp://, mailto:, etc..",
+					"Домен: This is the part of the URL that indicates the address of the server on which the resource is hosted. \r\n        For example, www.example.com.",
+					"Путь: This points to a specific path to a resource on the server. This is the part of the URL after the domain. \r\n        For example, /path/to/resource.",
+					"Строка запроса: These are the parameters passed in the URL for a request to a resource. \r\n        They begin with a question symbol ? and can contain key-value pairs separated by the ampersand & character. For example, ?key1=value1&key2=value2.",
+					"Фрагмент: This is a specific part of the resource that you need to go to or scroll to after the page has loaded. \r\n        The fragment begins with a hash symbol #. For example, #section1."
+				},
+				PageImageSrc = "/img/url.jpg"
+			};
 			return View(uRLStructPage);
 		}
 
-        public IActionResult Privacy()
-        {
-            Models.Home.Privacy.PrivacyPageModel privacyPage = new()
-            {
-                TabHeader = "Privacy",
-                PageTitle = "Privacy Policy",
-                PageText = "Use this page to detail your site's privacy policy."
-            };
-            return View(privacyPage);
-        }
-        public IActionResult Signup(SingupFormModel? formModel)
-        {
+		public IActionResult Privacy()
+		{
+			Models.Home.Privacy.PrivacyPageModel privacyPage = new()
+			{
+				TabHeader = "Privacy",
+				PageTitle = "Privacy Policy",
+				PageText = "Use this page to detail your site's privacy policy."
+			};
+			return View(privacyPage);
+		}
+		public IActionResult Signup(SingupFormModel? formModel)
+		{
 			SingupPageModel pageModel = new()
 			{
 				FormModel = formModel
 			};
-			if(formModel?.HasData ?? false)
+			if (formModel?.HasData ?? false)
 			{
 				pageModel.ValidationErrors = _ValidateSingupModel(formModel);
-				if(pageModel.ValidationErrors.Count == 0)
+				String code = RandomStringService.GenerateOTP(6);
+				String slug = Convert.ToBase64String(
+					System.Text.Encoding.UTF8.GetBytes(
+					$"{formModel.UserEmail}:{code}"));
+				if (pageModel.ValidationErrors.Count == 0)
 				{
-					String salt = RandomStringService.GenerateSalt(10);
-					_dataAccessor.UserDao.Signup(new()
+					SignupMailModel signupMail = new SignupMailModel()
 					{
-						Name = formModel.UserName,
-						Email = formModel.UserEmail,
-						Birthdate = formModel.UserBirthdate,
-						AvatarUrl = formModel.SavedAvatarFilename,
-						Salt = salt,
-						Derivedkey = _kdfService.DerivedKey(salt, formModel.Password)
-					});
+						Code = code,
+						User = formModel.UserName,
+						Slug = slug,
+						Scheme = Request.Scheme,
+						Host = Request.Host.ToString()
+                    };
+					MailMessage mailMessage = new()
+					{
+						Subject = signupMail.GetSubject(),
+						IsBodyHtml = true,
+						Body = signupMail.GetBody()
+					};
+					_logger.LogInformation(mailMessage.Body);
+					mailMessage.To.Add(formModel.UserEmail);
+					try
+					{
+						_emailService.Send(mailMessage);
+						String salt = RandomStringService.GenerateSalt(10);
+						_dataAccessor.UserDao.Signup(new()
+						{
+							Name = formModel.UserName,
+							Email = formModel.UserEmail,
+							EmailConfirmCode = code,
+							Birthdate = formModel.UserBirthdate,
+							AvatarUrl = formModel.SavedAvatarFilename,
+							Salt = salt,
+							Derivedkey = _kdfService.DerivedKey(salt, formModel.Password)
+						});
+					}
+					catch (Exception ex)
+					{
+						pageModel.ValidationErrors["email"] = "Не удалось отправить E-mail";
+						_logger.LogInformation(ex.Message);
+					}
+
+
 				}
 			}
 			//_logger.LogInformation(Directory.GetCurrentDirectory());
-            return View(pageModel);
-        }
+			return View(pageModel);
+		}
+
+		public ViewResult Admin()
+		{
+			return View();
+		}
 
 		[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 		public IActionResult Error()
 		{
 			return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 		}
+
 
 		private Dictionary<string, string> _ValidateSingupModel(SingupFormModel? model)
 		{

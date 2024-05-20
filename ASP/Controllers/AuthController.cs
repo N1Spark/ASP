@@ -1,32 +1,48 @@
 ﻿using ASP.Data.DAL;
+using ASP.Data.Entities;
+using ASP.Migrations;
+using ASP.Models;
+using ASP.Models.Home.Model;
+using ASP.Models.Home.Signup.MailTemplates;
+using ASP.Services.Email;
+using ASP.Services.Kdf;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Net.Mail;
 
 namespace ASP.Controllers
 {
-	[Route("api/auth")]
-	[ApiController]
-	public class AuthController : ControllerBase
-	{
-		private readonly DataAccessor _dataAccessor;
+    [Route("api/auth")]
+    [ApiController]
+    public class AuthController : ControllerBase
+    {
+        private readonly DataAccessor _dataAccessor;
+        private readonly IKdfService _kdfService;
+        private readonly IEmailService _emailService;
 
-		public AuthController(DataAccessor dataAccessor)
-		{
-			this._dataAccessor = dataAccessor;
-		}
+        private readonly ILogger<AuthController> _logger;
 
-		[HttpGet]
-		public object Get([FromQuery(Name="e-mail")] String email, String? password)
-		{
-			var user = _dataAccessor.UserDao.Authorize(email, password ?? "");
-			if(user == null)
-			{
-				Response.StatusCode = StatusCodes.Status401Unauthorized;
-				return new { Status = "Auth Failed" };
-			}
-			else
-			{
-				/* 
+        public AuthController(DataAccessor dataAccessor, IKdfService kdfService, IEmailService emailService, ILogger<AuthController> logger)
+        {
+            this._dataAccessor = dataAccessor;
+            _kdfService = kdfService;
+            _emailService = emailService;
+            _logger = logger;
+        }
+
+        [HttpGet]
+        public object Get([FromQuery(Name = "e-mail")] String email, String? password)
+        {
+            var user = _dataAccessor.UserDao.Authorize(email, password ?? "");
+            if (user == null)
+            {
+                Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return new { Status = "Auth Failed" };
+            }
+            else
+            {
+                /*
 				   Http-cecii -- спосіб для збереження з боку сервера даних, що
 				   будуть доступними після перевантаження сторінки. 
 				   Налаштунвання: https://learn.microsoft.com/en-us/aspnet/core/fundamentals/app-state?view=aspnetcore-8.0
@@ -35,25 +51,130 @@ namespace ASP.Controllers
 				   значення має бути серіалізовуваним (таким, що можна зберегти у файл)
 				*/
 
-				HttpContext.Session.SetString("auth-user-id", user.Id.ToString());
+                HttpContext.Session.SetString("auth-user-id", user.Id.ToString());
 
-				return user;
-			}
-		}
+                return user;
+            }
+        }
 
-		[HttpPost]
-		public object Post()
-		{
-			return new {Status  = "POST Works" };
-		}
+        [HttpPost]
+        public object Post()
+        {
+            return new { Status = "POST Works" };
+        }
 
-		[HttpPut]
-		public object Put()
-		{
-			return new {Status  = "PUT Works" };
-		}
-	}
+        [HttpPut]
+        public object Put()
+        {
+            return new { Status = "PUT Works" };
+        }
+
+        [HttpPatch]
+        public object Patch(String email, String code)
+        {
+            if (_dataAccessor.UserDao.ConfirmEmail(email, code))
+            {
+                Response.StatusCode = StatusCodes.Status202Accepted;
+                return new { Status = "Ok" };
+            }
+            else
+            {
+                Response.StatusCode = StatusCodes.Status409Conflict;
+                return new { StatusCode = "Error" };
+            }
+        }
+
+        public String DoOther()
+        {
+            if (Request.Method == "RESTORE")
+            {
+                return DoRestorePassword();
+            }
+            Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+            return "Method not Allowed";
+        }
+
+        private String DoRestorePassword()
+        {
+            String? email = Request.Query["email"].FirstOrDefault();
+            String? name = Request.Query["username"].FirstOrDefault();
+            String? password;
+            try
+            {
+                password = _dataAccessor.UserDao.RestorePassword(email!, name!);
+                _logger.LogInformation("Password: " + password);
+            }
+            catch
+            {
+                Response.StatusCode = StatusCodes.Status400BadRequest;
+                return "Empty or invalid inputs";
+            }
+            Response.StatusCode = StatusCodes.Status202Accepted;
+            if (password == "")
+            {
+                Response.StatusCode = StatusCodes.Status500InternalServerError;
+                return "Error generate password";
+            }
+            RestorePasswordMailModel model = new RestorePasswordMailModel()
+            {
+                Password = password,
+                User = name,
+            };
+            MailMessage mailMessage = new()
+            {
+                Subject = model.GetSubject(),
+                IsBodyHtml = true,
+                Body = model.GetBody()
+            };
+            mailMessage.To.Add(email!);
+            try
+            {
+                _emailService.Send(mailMessage);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation(ex.Message);
+            }
+            return "RESTORE works with email: " + email;
+        }
+
+        [HttpGet("token")]
+        public Token? GetToken(String email, String? password)
+        {
+            var user = _dataAccessor.UserDao.Authorize(email, password ?? "");
+            if (user == null)
+            {
+                Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return null;
+            }
+            Token? activeToken = _dataAccessor.UserDao.FindUserToken(user);
+            if (activeToken == null)
+            {
+                _logger.LogInformation("token prosrochen, new token cozdan");
+                return _dataAccessor.UserDao.CreateTokenForUser(user); 
+            }
+            _logger.LogInformation("token naiden");
+            return activeToken;
+        }
+    }
 }
+
+/*	Схеми авторизації API. Токени
+ *	Розрізняють дві групи схем
+ *	- серверні cecii - підходить для Server-Page архітектури
+ *	- токени - для SPA архітектури
+ *	Токен (від англ. - жетон, посвідчення) - дані, що дозволяють
+ *	автентифікувати запит від фронтенду
+ *
+ *	Back				Front
+ *	  <------------ [login,password]
+ *	[token: 123] -------->
+ *	  <------------ [GET / rooms token: 123]
+ *	[nepeвipкa
+ *	токeна,
+ *	відповідь] ------->
+ */
+
 /* Контролери поділяються на дві групи - API та MVC
  * MVC :
  *	- мають багато Action, кожен з яких запускається своїм Route
