@@ -2,6 +2,7 @@
 using ASP.Data.Entities;
 using ASP.Migrations;
 using ASP.Models;
+using ASP.Models.FrontendForm;
 using ASP.Models.Home.Model;
 using ASP.Models.Home.Signup.MailTemplates;
 using ASP.Services.Email;
@@ -58,9 +59,39 @@ namespace ASP.Controllers
         }
 
         [HttpPost]
-        public object Post()
+        public object Post(FrontendFormInput model)
         {
-            return new { Status = "POST Works" };
+            try
+            {
+                String? fileName = null;
+                if (model.Photo != null)
+                {
+                    String ext = Path.GetExtension(model.Photo.FileName);
+                    String path = Directory.GetCurrentDirectory() + "/wwwroot/img/avatars/";
+                    String pathName;
+                    do
+                    {
+                        fileName = Guid.NewGuid() + ext;
+                        pathName = path + fileName;
+                    }
+                    while (System.IO.File.Exists(pathName));
+                    using var stream = System.IO.File.OpenWrite(pathName);
+                    model.Photo.CopyTo(stream);
+                }
+                if (fileName == null)
+                {
+                    Response.StatusCode = StatusCodes.Status400BadRequest;
+                    return "File Image required";
+                }
+                _dataAccessor.UserDao.SignUpApi(model.Name, model.Email, fileName, model.Password, model.Date);
+                Response.StatusCode = StatusCodes.Status201Created;
+                return "Added";
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = StatusCodes.Status500InternalServerError;
+                return ex.Message;
+            }
         }
 
         [HttpPut]
@@ -150,10 +181,10 @@ namespace ASP.Controllers
             Token? activeToken = _dataAccessor.UserDao.FindUserToken(user);
             if (activeToken == null)
             {
-                _logger.LogInformation("token prosrochen, new token cozdan");
+                _logger.LogInformation("token expired, new token creating");
                 return _dataAccessor.UserDao.CreateTokenForUser(user); 
             }
-            _logger.LogInformation("token naiden");
+            _logger.LogInformation("token findet");
             return activeToken;
         }
     }

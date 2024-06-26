@@ -1,8 +1,11 @@
 ﻿using ASP.Data.Entities;
 using ASP.Models;
 using ASP.Models.Home.Model;
+using ASP.Models.Home.Signup.MailTemplates;
 using ASP.Services.Kdf;
+using Azure.Core;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
 
 namespace ASP.Data.DAL
 {
@@ -56,6 +59,17 @@ namespace ASP.Data.DAL
             return userToken;
         }
 
+        public Token? CheckExpiredToken(Guid tokenId)
+        {
+            Token? token = _dataContext.Tokens.FirstOrDefault(t => t.id == tokenId);
+            DateTime today = DateTime.Now;
+            if (token != null && token.ExpireDt < today)
+            {
+                return null;
+            }
+            return token;
+        }
+
         public Token? CreateTokenForUser(User user)
         {
             return CreateTokenForUser(user.Id);
@@ -107,6 +121,42 @@ namespace ASP.Data.DAL
             }
             _dataContext.Users.Add(user);
             _dataContext.SaveChanges();
+        }
+        
+        public void SignUpApi(String name, String email, String? photoUrl, String password, DateTime birthdate)
+        {
+            String code = RandomStringService.GenerateOTP(6);
+            String slug = Convert.ToBase64String(
+                System.Text.Encoding.UTF8.GetBytes(
+                $"{email}:{code}"));
+
+            SignupMailModel signupMail = new SignupMailModel()
+            {
+                Code = code,
+                User = name,
+                Slug = slug,
+            };
+            MailMessage mailMessage = new()
+            {
+                Subject = signupMail.GetSubject(),
+                IsBodyHtml = true,
+                Body = signupMail.GetBody()
+            };
+
+            mailMessage.To.Add(email);
+
+            String salt = RandomStringService.GenerateSalt(10);
+            User user = new()
+            {
+                Name = name,
+                Email = email,
+                EmailConfirmCode = code,
+                Birthdate = birthdate,
+                AvatarUrl = photoUrl,
+                Salt = salt,
+                Derivedkey = _kdfService.DerivedKey(salt, password)
+            };
+            Signup(user);
         }
 
         public Boolean ConfirmEmail(String email, String code)

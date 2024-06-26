@@ -115,7 +115,7 @@ namespace ASP.Controllers
 			FrontendFormOutput output = new()
 			{
 				Code = 200,
-				Message = $"{input.UserName} -- {input.UserEmail} -- {input.UserGen} -- {input.UserDate.ToString().Substring(0, 10)}"
+				//Message = $"{input.UserName} -- {input.UserEmail} -- {input.UserGen} -- {input.UserDate.ToString().Substring(0, 10)}"
 			};
 			_logger.LogInformation(output.Message);
 			return Json(output);

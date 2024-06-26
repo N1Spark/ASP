@@ -27,13 +27,15 @@ namespace ASP.Controllers
         public IActionResult Category([FromRoute] String id)
         {
             var ctg = _dataAccessor.ContentDao.GetCategoryBySlug(id);
-
+            String? userRole = HttpContext.User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            bool isAdmin = "Admin".Equals(userRole);
             return ctg == null
                 ? View("NotFound")
                 : View(new ContentCategoryPageModel
                 {
                     Category = ctg,
-                    Locations = _dataAccessor.ContentDao.GetLocations(ctg.Slug!)
+                    Locations = _dataAccessor.ContentDao.GetLocations(ctg.Slug!, isAdmin)
                 });
         }
         public IActionResult Location([FromRoute] String id)

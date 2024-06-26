@@ -1,6 +1,7 @@
 ﻿using ASP.Data.Entities;
 using ASP.Models.Content.Room;
 using Microsoft.EntityFrameworkCore;
+using System.Runtime.InteropServices;
 
 namespace ASP.Data.DAL
 {
@@ -135,7 +136,7 @@ namespace ASP.Data.DAL
             }
         }
 
-        public List<Location> GetLocations(String categorySlug)
+        public List<Location> GetLocations(String categorySlug, bool includedDeleted)
         {
             var ctg = GetCategoryBySlug(categorySlug);
             if (ctg == null)
@@ -144,8 +145,7 @@ namespace ASP.Data.DAL
             }
             var query = _context
                 .Locations
-                .Where(loc => loc.DeleteDt == null && loc.CategoryId == ctg.Id);
-
+                .Where(loc => (includedDeleted || loc.DeleteDt == null) && loc.CategoryId == ctg.Id);
             return query.ToList();
         }
         public Location? GetLocationBySlug(String slug)
@@ -156,6 +156,69 @@ namespace ASP.Data.DAL
                 ctg = _context.Locations.FirstOrDefault(c => c.Slug == slug);
             }
             return ctg;
+        }
+        public Location? GetLocationById(Guid? id)
+        {
+            Location? loc;
+            lock (_dblocker)
+            {
+                loc = _context.Locations.FirstOrDefault(l => l.Id == id);
+            }
+            return loc;
+        }
+
+        public void UpdateLocation(Location location)
+        {
+            Location? loc;
+            lock (_dblocker)
+            {
+                loc = _context.Locations.Find(location.Id);
+            }
+            if (loc != null || loc == location)
+            {
+                loc.Name = location.Name;
+                loc.Description = location.Description;
+                loc.DeleteDt = location.DeleteDt;
+                loc.PhotoUrl = location.PhotoUrl;
+            }
+            lock (_dblocker)
+            {
+                _context.SaveChanges();
+            }
+        }
+
+        public void DeleteLocation(Guid id)
+        {
+            var loc = _context
+                .Locations
+                .Find(id);
+            if (loc != null || loc.DeleteDt == null)
+            {
+                loc.DeleteDt = DateTime.Now;
+                lock (_dblocker)
+                {
+                    _context.SaveChanges();
+                }
+            }
+        }
+        public void DeleteLocation(Location loc)
+        {
+            DeleteCategory(loc.Id);
+        }
+
+        public void RestoreLocation(Guid id)
+        {
+            var loc = _context
+                .Locations
+                .Find(id);
+            if (loc != null || loc.DeleteDt != null)
+            {
+                loc.DeleteDt = null;
+                lock (_dblocker)
+                {
+                    _context.SaveChanges();
+                }
+            }
         }
 
         public void AddRoom(String name, String description,

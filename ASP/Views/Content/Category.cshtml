@@ -1,10 +1,84 @@
 ﻿@model ASP.Models.Content.Category.ContentCategoryPageModel
+@using System.Security.Claims
 
 @{
-	Layout = "_ContentLayout";
+    Layout = "_ContentLayout";
+    bool isAuthenticated = Context.User.Identity?.IsAuthenticated ?? false;
+    String role = isAuthenticated
+    ? Context.User.Claims.First(claim => claim.Type == ClaimTypes.Role).Value
+    : "";
+    ViewData["role"] = role;
 }
 <h1>Category: @Model.Category.Name</h1>
-@foreach(var location in Model.Locations)
+<div class="row row-cols-1 row-cols-md-4 g-4">
+    @foreach (var location in Model.Locations)
+    {
+        @Html.DisplayFor(m => location, "LocationTemplate")
+    }
+</div>
+@if ("Admin".Equals(role))
 {
-	@Html.DisplayFor(m => location, "LocationTemplate")
+    <hr />
+    <form id="location-form" method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="location-name"><i class="bi bi-person-vcard"></i></span>
+                    <input type="text" class="form-control"
+                           placeholder="Назва" name="location-name"
+                           aria-label="Location Name" aria-describedby="location-name">
+                    <div class="invalid-feedback">Ім'я не може бути порожнім</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="location-description"><i class="bi bi-file-text"></i></span>
+                    <input type="text" class="form-control"
+                           name="location-description" placeholder="Опис"
+                           aria-label="Description" aria-describedby="location-description">
+                    <div class="invalid-feedback">Опис не може бути порожнім</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="location-slug"><i class="bi bi-link"></i></span>
+                    <input type="text" class="form-control" placeholder="Slug"
+                           name="location-slug"
+                           aria-label="Location Slug" aria-describedby="location-slug">
+                    <div class="invalid-feedback">Slug должен быть уникальным</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="input-group mb-3">
+                    <span class="input-group-text" id="location-stars"><i class="bi bi-star-fill"></i></span>
+                    <input type="text" class="form-control" placeholder="Stars"
+                           name="location-stars"
+                           aria-label="Location Stars" aria-describedby="location-stars">
+                    <div class="invalid-feedback">Stars должен быть уникальным</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="input-group mb-3">
+                    <label class="input-group-text" for="location-photo"><i class="bi bi-image"></i></label>
+                    <input type="file" class="form-control" name="location-photo" id="location-photo">
+                    <div class="invalid-feedback">Файл должен быть типа изображения</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <button type="submit" class="btn btn-secondary"
+                        name="location-button" value="true">
+                    Зберегти
+                </button>
+            </div>
+        </div>
+        <input type="hidden" name="location-id" value="">
+        <input type="hidden" name="loc-category-id" value="@Model.Category.Id">
+    </form>
+    <hr />
 }

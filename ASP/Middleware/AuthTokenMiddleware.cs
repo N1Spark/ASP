@@ -38,8 +38,9 @@ namespace ASP.Middleware
 				catch { throw new Exception("Token invalid: GUID required"); }
 				User? user = dataAcessor.UserDao.GetUserByToken(tokenId)
 					?? throw new Exception("Token invalid or expired");
-
-				Claim[] claims = new Claim[] {
+				Token? tokenCheck = dataAcessor.UserDao.CheckExpiredToken(tokenId)
+                    ?? throw new Exception("Token expired");
+                Claim[] claims = new Claim[] {
 					new (ClaimTypes.Sid,        user.Id.ToString()),
 					new (ClaimTypes.Email,      user.Email),
 					new (ClaimTypes.Name,       user.Name),

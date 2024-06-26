@@ -1,6 +1,7 @@
 using ASP.Data;
 using ASP.Data.DAL;
 using ASP.Middleware;
+using ASP.Services;
 using ASP.Services.Email;
 using ASP.Services.Hash;
 using ASP.Services.Kdf;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("emailconfig.json", true);
+builder.Configuration.AddJsonFile("emailconfig.json", false);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -35,7 +36,7 @@ builder.Services.AddDbContext<DataContext>(
 builder.Services.AddSingleton<DataAccessor>();
 builder.Services.AddSingleton<IKdfService, Pbkdf1Service>();
 builder.Services.AddSingleton<IEmailService, GmailService>();
-
+builder.Services.AddHostedService<ExpiredTokenCleanService>();
 
 // Налаштування Http-сесiй
 builder.Services.AddDistributedMemoryCache();

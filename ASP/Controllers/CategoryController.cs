@@ -197,6 +197,12 @@ namespace ASP.Controllers
             return "RESTORE works with id: " + id;
         }
 
+
+        [HttpPatch]
+        public Category? DoPatch(String slug)
+        {
+            return _dataAccessor.ContentDao.GetCategoryBySlug(slug);
+        }
     }
     public class CategoryPostModel
     {
