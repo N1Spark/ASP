@@ -1,14 +1,21 @@
 ﻿@model ASP.Data.Entities.Room
 
 <div class="col">
-	<div class="card h-100" style="width: 18rem;">
-		<a asp-action="Room" asp-route-id="@(Model.Slug)">
-			<img src="~/img/content/@(Model.PhotoUrl ?? "no-image.jpg")" class="card-img-top" alt="...">
-			<div class="card-body">
-				<h5 class="card-title">@Model.Name</h5>
-				<p class="card-text">@Model.Description</p>
-				<b class="float-end">₴ @(Model.DailyPrice.ToString("F2"))</b>
-			</div>
-		</a>
-	</div>
+    <div class="card card-room h-100" style="width: 18rem;">
+        <a asp-action="Room" asp-route-id="@(Model.Slug)">
+            <img src="~/img/content/@(Model.PhotoUrl ?? "no-image.jpg")" class="card-img-top" alt="...">
+            <div class="card-body">
+                <h5 class="card-title">Room №@Model.Name</h5>
+                <div class="sub-info">
+                    <div class="stars">
+                        @for (int i = 0; i < Model.Stars; i++)
+                        {
+                            <i class="bi bi-star-fill"></i>
+                        }
+                    </div>
+                    <b class="float-end">₴ @(Model.DailyPrice.ToString("F2"))</b>
+                </div>
+            </div>
+        </a>
+    </div>
 </div>

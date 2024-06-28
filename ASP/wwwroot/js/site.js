@@ -72,6 +72,41 @@
             });
         }
     }
+    if (form.id == 'location-form') {
+        e.preventDefault();
+        let formData = new FormData(form);
+        locId = formData.get("location-id");
+        if (locId) {
+            // оновлення
+            console.log("Оновлення локації " + locId);
+            fetch('/api/location', {
+                method: 'PUT',
+                body: formData
+            }).then(r => {
+                if (r.status < 300) {
+                    window.location.reload();
+                }
+                else {
+                    r.text().then(alert);
+                }
+            });
+        }
+        else {
+            // додавання (створення)
+            console.log("Додавання нової локації");
+            fetch('/api/location', {
+                method: 'POST',
+                body: formData
+            }).then(r => {
+                if (r.status == 201) {
+                    window.location.reload();
+                }
+                else {
+                    r.text().then(alert);
+                }
+            });
+        }
+    }
     // на інші форми ми не вплюваємо
 });
 document.addEventListener('DOMContentLoaded', function () {
@@ -90,6 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function serveAdminButtons() {
+    //////////////// CATEGORY BUTTONS /////////////////
     for (let btn of document.querySelectorAll('[data-type="edit-category"]')) {
         btn.addEventListener('click', e => {
             let b = e.target.closest('[data-type="edit-category"]');
@@ -145,6 +181,71 @@ function serveAdminButtons() {
             else {
                 alert("Помилка розмітки - немає id елемента");
             }
+        });
+    }
+
+    ///////////////// LOCATION BUTTONS //////////////////
+
+    for (let btn of document.querySelectorAll('[data-type="delete-location"]')) {
+        btn.addEventListener("click", e => {
+            let b = e.target.closest('[data-type="delete-location"]');
+            let id = b.getAttribute("data-location-id");
+            if (id) {
+                if (confirm("Ви підтверджуєте видалення локацiї?")) {
+                    fetch(`/api/location/${id}`, { method: 'DELETE' }).then(r => {
+                        if (r.status < 400) {
+                            window.location.reload();
+                        }
+                        else {
+                            alert("Виникла помилка видалення");
+                        }
+                    })
+                }
+            }
+            else {
+                alert("Помилка розмітки - немає id елемента");
+            }
+        });
+    }
+
+    for (let btn of document.querySelectorAll('[data-type="restore-location"]')) {
+        btn.addEventListener("click", e => {
+            let b = e.target.closest('[data-type="restore-location"]');
+            let id = b.getAttribute("data-location-id");
+            if (id) {
+                if (confirm("Ви підтверджуєте вiдновлення локацiї?")) {
+                    fetch(`/api/location?id=${id}`, { method: 'RESTORE' }).then(r => {
+                        if (r.status < 400) {
+                            window.location.reload();
+                            //r.text().then(console.log);
+                        }
+                        else {
+                            alert("Виникла помилка вiдновлення");
+                        }
+                    })
+                }
+            }
+            else {
+                alert("Помилка розмітки - немає id елемента");
+            }
+        });
+    }
+
+    for (let btn of document.querySelectorAll('[data-type="edit-location"]')) {
+        btn.addEventListener('click', e => {
+            let b = e.target.closest('[data-type="edit-location"]');
+            document.querySelector('[name = "location-id"]').value =
+                b.getAttribute("data-location-id");
+            document.querySelector('[name = "loc-category-id"]').value =
+                b.getAttribute("data-category-id");
+            document.querySelector('[name = "location-name"]').value =
+                b.getAttribute("data-location-name");
+            document.querySelector('[name = "location-description"]').value =
+                b.getAttribute("data-location-description");
+            document.querySelector('[name = "location-slug"]').value =
+                b.getAttribute("data-location-slug");
+            document.querySelector('[name = "location-stars"]').value =
+                b.getAttribute("data-location-stars");
         });
     }
 }

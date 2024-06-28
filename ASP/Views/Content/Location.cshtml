@@ -2,6 +2,7 @@
 
 @using System.Security.Claims
 @{
+    Layout = "_ContentLayout";
     bool isAuthenticated = Context.User.Identity?.IsAuthenticated ?? false;
     bool isAdmin = isAuthenticated
     ? Context
@@ -25,9 +26,9 @@
     }
 }
 
-<h1>Location: @Model.Location.Name</h1>
+<h1 class="content-type-h">@Model.Location.Name rooms</h1>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
+<div class="row row-cols-1 row-cols-md-4 g-4">
     @foreach (var room in Model.Rooms)
     {
         @Html.DisplayFor(m => room, "RoomTemplate")

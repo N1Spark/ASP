@@ -264,7 +264,11 @@ namespace ASP.Data.DAL
             }
             return res;
         }
-
+        public Room? GetRoomById(String id)
+        {
+            Room? room = _context.Rooms.FirstOrDefault(r => r.Id == Guid.Parse(id));
+            return room == null ? null : room;
+        }
         public Room? GetRoomBySlug(String slug)
         {
             Guid? id;

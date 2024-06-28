@@ -3,20 +3,24 @@ using ASP.Data.Entities;
 using ASP.Middleware;
 using ASP.Models.Content.Location;
 using ASP.Models.Content.Room;
+using ASP.Models.Home.Signup.MailTemplates;
+using ASP.Services.Email;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Net.Mail;
 using System.Security.Claims;
 
 namespace ASP.Controllers
 {
     [Route("api/room")]
     [ApiController]
-    public class RoomController(DataAccessor dataAccessor, ILogger<RoomController> logger)
+    public class RoomController(DataAccessor dataAccessor, ILogger<RoomController> logger, IEmailService emailService)
         : BackendController
     {
         private readonly DataAccessor _dataAccessor = dataAccessor;
         private readonly ILogger<RoomController> _logger = logger;
+        private readonly IEmailService _emailService = emailService;
 
         [HttpGet("all/{id}")]
         public List<Room> GetRooms(String id)
@@ -127,6 +131,25 @@ namespace ASP.Controllers
 
             try
             {
+                User? user = _dataAccessor.UserDao.GetUserById(model.UserId.ToString());
+                Room? room = _dataAccessor.ContentDao.GetRoomById(model.RoomId.ToString());
+                Location? location = _dataAccessor.ContentDao.GetLocationById(room.LocationId);
+                ReservedRoomMailModel mailModel = new ReservedRoomMailModel()
+                {
+                    User = user?.Name,
+                    Date = model.Date.ToString(),
+                    Location = location?.Name,
+                    Room = room?.Name,
+                    Price = room?.DailyPrice.ToString()
+                };
+                MailMessage mailMessage = new()
+                {
+                    Subject = mailModel.GetSubject(),
+                    IsBodyHtml = true,
+                    Body = mailModel.GetBody()
+                };
+                mailMessage.To.Add(user?.Email!);
+                _emailService.Send(mailMessage);
                 _dataAccessor.ContentDao.ReserveRoom(model);
                 Response.StatusCode = StatusCodes.Status201Created;
                 return "Reserved";

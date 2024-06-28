@@ -2,22 +2,24 @@
 @using System.Security.Claims
 
 @{
-	Layout = "_ContentLayout";
-	bool isAuthenticated = Context.User.Identity?.IsAuthenticated ?? false;
-	String role = isAuthenticated
-	? Context.User.Claims.First(claim => claim.Type == ClaimTypes.Role).Value
-	: "";
-	ViewData["role"] = role;
+    Layout = "_ContentLayout";
+    bool isAuthenticated = Context.User.Identity?.IsAuthenticated ?? false;
+    String role = isAuthenticated
+    ? Context.User.Claims.First(claim => claim.Type == ClaimTypes.Role).Value
+    : "";
+    ViewData["role"] = role;
 }
-<div class="row row-cols-1 row-cols-md-4 g-4">
-	@foreach (var category in Model.Categories)
-	{
-		@Html.DisplayFor(m => category, "Category")
-	}
+<div class="container cards">
+    <div class="row row-cols-1 row-cols-md-4 g-4">
+        @foreach (var category in Model.Categories)
+        {
+            @Html.DisplayFor(m => category, "Category")
+        }
+    </div>
 </div>
 @if ("Admin".Equals(role))
 {
-	<hr />
+    <hr />
     <form id="category-form" method="post" enctype="multipart/form-data">
         <div class="row">
             <div class="col">
@@ -67,21 +69,21 @@
         </div>
         <input type="hidden" name="category-id" value="">
     </form>
-	<hr />
+    <hr />
 }
-<h2>Частинні представлення</h2>
+<h2 style="margin-top: 20px;">Частинні представлення</h2>
 <p>
-	Для відображення комплексних даних (наприклад, категорії) вживаються
-	частинні представлення. їх розміщують в окремій директорії
-	DisplayTemplates у директорії з даним представленням (Views/Content)).
-	За замовчанням назва представлення - тип даних, для якого воно призначене,
-	але це не принципово.
-	У частинному представленні зазначаємо модель, а в основному представленні
-	передаємо дані для частинного через <code>Html.DisplayFor</code>
-	Якщо назва представлення збігається з іменем типу даних, то достатньо
-	одного параметру - селектора даних
-	<code>Html.DisplayFor(m => category)</code>
-	якщо не збігається або якщо для одного типу потрібно декілька представлень,
-	то другим параметром можна передати його назву
-	<code>Html.DisplayFor(m => category, "Category"D</code>
+    Для відображення комплексних даних (наприклад, категорії) вживаються
+    частинні представлення. їх розміщують в окремій директорії
+    DisplayTemplates у директорії з даним представленням (Views/Content)).
+    За замовчанням назва представлення - тип даних, для якого воно призначене,
+    але це не принципово.
+    У частинному представленні зазначаємо модель, а в основному представленні
+    передаємо дані для частинного через <code>Html.DisplayFor</code>
+    Якщо назва представлення збігається з іменем типу даних, то достатньо
+    одного параметру - селектора даних
+    <code>Html.DisplayFor(m => category)</code>
+    якщо не збігається або якщо для одного типу потрібно декілька представлень,
+    то другим параметром можна передати його назву
+    <code>Html.DisplayFor(m => category, "Category"D</code>
 </p>

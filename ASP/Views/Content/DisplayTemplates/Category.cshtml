@@ -4,16 +4,16 @@
     String filter = isDeleted ? "opacity: .4;" : "";
 }
 <div class="col">
-    <div class="card h-100" style="width: 18rem; @filter">
+    <div class="card inf h-100" style="width: 18rem; @filter">
         <a asp-action="Category" asp-route-id="@(Model.Slug)">
-            <img src="~/img/content/@(Model.PhotoUrl ?? "no-image.jpg")" class="card-img-top" alt="...">
+            <img src="~/img/content/@(Model.PhotoUrl ?? "no-image.jpg")" class="card-img-top img-category" alt="...">
             <div class="card-body">
                 @if (isDeleted)
                 {
                     <i>Видалено @(Model.DeleteDt)</i>
                 }
                 <h5 class="card-title">@Model.Name</h5>
-                <p class="card-text">@Model.Description</p>
+                <p>@(Model.Description)</p>
             </div>
         </a>
         @if ("Admin".Equals(ViewData["role"]))

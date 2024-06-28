@@ -43,38 +43,52 @@ body {
     border-radius: 50%;
 }
 
-.sub-header {
-    background: url(/img/header.jpg) no-repeat;
-    background-size: cover;
-    width: 100%;
-    height: 25vh;
-    min-height: 150px;
-}
-
 .card a{
     text-decoration: none;
     color: inherit;
 }
 
 .calendar {
-    border: 1px solid gray;
+    margin-left: 20px;
     display: flex;
     flex-wrap: wrap;
+    border: 3px solid;
+    border-radius: 20px;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
 .calendar-item {
-    border: 1px solid gray;
     text-align: center;
     width: 14.286%;
+    padding:12px;
+    transition: 0.3s;
+}
+
+.day-header {
+    font-weight: bold;
+    text-align: center;
 }
 
 .item-free{
-    color: greenyellow;
+    background-color: mediumspringgreen;
+    border-radius: 70%;
     cursor: pointer;
 }
+.item-free:hover {
+    background-color: lightseagreen;
+}
+
 .item-past{
+    cursor: default;
     color: gray;
 }
-.item-reserved{
-    color: hotpink;
+
+.item-reserved {
+    cursor: pointer;
+    border-radius: 100%;
+    background-color: red;
+}
+.item-reserved:hover{
+    cursor: pointer;
+    background-color: darkred;
 }
